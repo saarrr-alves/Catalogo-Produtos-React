@@ -2,17 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ProdutoCard from '../components/ProdutoCard';
 import '../components/ProdutoCard.css';
 import './Home.css';
-import axios from 'axios';
 
-// Imagens locais
-import camisetaImg from '../assets/camiseta.png';
-import calcaJeansImg from '../assets/calca-jeans.png';
-import tenisEsportivoImg from '../assets/tenis-esportivo.png';
-import jaquetaImg from '../assets/jaqueta.png';
-import mochilaImg from '../assets/mochila.png';
-import relogioPulsoImg from '../assets/relogio-pulso.png';
-
-const API_URL = 'https://crudcrud.com/api/469f567b07e2415fa8d9006934793af6/produtos';
+const API_URL = 'https://crudcrud.com/api/ab72dc9c231c46d0baf7dc4ed47d90c4/produtos';
 
 function Home() {
   const [produtos, setProdutos] = useState([]);
@@ -24,41 +15,52 @@ function Home() {
     imagem: ''
   });
 
-  // Carregar produtos da API
-  useEffect(() => {
-    const fetchProdutos = async () => {
-      try {
-        const response = await axios.get(API_URL);
-        setProdutos(response.data);
-      } catch (error) {
-        console.error('Erro ao carregar produtos:', error);
-      } finally {
-        setCarregando(false);
-      }
-    };
+  // Função para carregar produtos da API
+  const carregarProdutos = async () => {
+    try {
+      setCarregando(true);
+      const response = await fetch(API_URL);
+      const data = await response.json();
+      setProdutos(data);
+    } catch (error) {
+      console.error('Erro ao carregar produtos:', error);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-    fetchProdutos();
+  // useEffect para carregar produtos ao montar o componente
+  useEffect(() => {
+    carregarProdutos();
   }, []);
 
   // Atualizar estado do formulário
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({
+      ...form,
+      [name]: value
+    });
   };
 
-  // Adicionar novo produto
+  // Adicionar novo produto e recarregar a lista
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const novoProduto = {
-      nome: form.nome,
-      preco: parseFloat(form.preco),
-      descricao: form.descricao,
-      imagem: form.imagem || 'https://via.placeholder.com/150'
-    };
-
     try {
-      const response = await axios.post(API_URL, novoProduto);
-      setProdutos((prevProdutos) => [...prevProdutos, response.data]);
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(form)
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao adicionar produto');
+      }
+
       setForm({ nome: '', preco: '', descricao: '', imagem: '' });
+      await carregarProdutos(); // Recarrega os produtos após adicionar
     } catch (error) {
       console.error('Erro ao adicionar produto:', error);
     }
@@ -81,38 +83,38 @@ function Home() {
       <div className='form-container'>
         <h2>Adicionar novo produto</h2>
         <form onSubmit={handleSubmit} className="form-produto">
-            <input
+          <input
             type="text"
             name="nome"
             value={form.nome}
             onChange={handleChange}
             placeholder="Nome do produto"
             required
-            />
-            <input
+          />
+          <input
             type="number"
             name="preco"
             value={form.preco}
             onChange={handleChange}
             placeholder="Preço"
             required
-            />
-            <input
+          />
+          <input
             type="text"
             name="descricao"
             value={form.descricao}
             onChange={handleChange}
             placeholder="Descrição"
             required
-            />
-            <input
+          />
+          <input
             type="text"
             name="imagem"
             value={form.imagem}
             onChange={handleChange}
             placeholder="URL da imagem (opcional)"
-            />
-            <button type="submit">Adicionar</button>
+          />
+          <button type="submit">Adicionar</button>
         </form>
       </div>
     </div>
